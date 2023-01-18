@@ -25,31 +25,6 @@
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
-  <component name="RunManager">
-    <configuration name="train " type="PythonConfigurationType" factoryName="Python">
-      <module name="Group-QPP" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-        <env name="CUDA_VISIBLE_DEVICES" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="sftp://tomergur@iegpu03.iem.technion.ac.il:22/lv_local/home/tomergur/Group-QPP/group_qpp_env/bin/python3.7" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/code" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/code/cross_validation_train.py" />
-      <option name="PARAMETERS" value="--data_dir /v/tomergur/convo/super_qpp/group_qpp_pt/or_quac_valid_t5/  --data_name data_4.csv --encoder_model bert-base-uncased --groupwise_model google/bert_uncased_L-4_H-768_A-12  --attn_model google/bert_uncased_L-2_H-768_A-12  --task_name or_quac --trec_eval_path /lv_local/home/tomergur/scripts/trec_eval_9.0/trec_eval --output_dir  /v/tomergur/convo/qpp_models/group_qpp_pt/or_quac_t5/ --outdir_name train_model_v3  --ref_file /lv_local/home/tomergur/convo_search_project/data/or_quac/or_qrels.txt  --ql_ranking_file /mnt/bi-strg3/v/tomergur/convo/res/rerank_valid_kld_100/or_quac/t5_run.txt  --model_name cobert  --max_seq_length 512  --fold 1   --label_num 2  --metric recip_rank  --qid_split_dir /home1/cxy/QPP/data/clue/30_split --qid_file /home1/cxy/QPP/data/clue/qids --do_train --do_lower_case  --train_batch_size  4  --seed 42  --eval_step 50  --save_step 50000 --label_type all --rank_num 5  --learning_rate 1e-6   --num_train_epochs 1     --qpp_file_path  /lv_local/home/tomergur/convo_search_project/data/qpp/topic_comp/rerank_valid_kld_100/or_quac/tsv_cache/max_idf_t5.tsv  --data_seed 75 --random  --qpp_methods ISD --pos" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -60,7 +35,7 @@
       <updated>1673293430048</updated>
       <workItem from="1673293433438" duration="3512000" />
       <workItem from="1673341097248" duration="4767000" />
-      <workItem from="1673437931849" duration="61804000" />
+      <workItem from="1673437931849" duration="61837000" />
     </task>
     <servers />
   </component>
@@ -72,32 +47,32 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/code/cross_validation_train.py</url>
-          <line>496</line>
+          <line>487</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/code/cross_validation_train.py</url>
-          <line>435</line>
+          <line>432</line>
           <option name="timeStamp" value="23" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/code/cross_validation_train.py</url>
-          <line>441</line>
+          <line>438</line>
           <option name="timeStamp" value="24" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/code/cross_validation_train.py</url>
-          <line>620</line>
+          <line>603</line>
           <option name="timeStamp" value="28" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/code/cross_validation_train.py</url>
-          <line>599</line>
+          <line>587</line>
           <option name="timeStamp" value="31" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/code/cross_validation_train.py</url>
-          <line>610</line>
+          <line>597</line>
           <option name="timeStamp" value="33" />
         </line-breakpoint>
       </breakpoints>

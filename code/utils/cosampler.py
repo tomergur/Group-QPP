@@ -63,7 +63,7 @@ class cross_posCOBERTSampler(Sampler):
         self.rank_num = args.rank_num
         self.total_top = total_top
         self.qpp_order = self.get_initial_qpp_list(qpp_file_path)
-        print(self.qpp_order)
+        #print(self.qpp_order)
         self.batchnum_wo_drop, self.batchnum_wi_drop, self.indices = self.get_indices()
         logger.info('cross_COBERTSampler start successfully!')
 
@@ -82,13 +82,13 @@ class cross_posCOBERTSampler(Sampler):
         for item in order:
             qpp_id_order.append(item[0])
         for q in self.qids:
-            if q not in qpp_id_order:
+            if q.decode('utf-8') not in qpp_id_order:
                 i = random.randint(0, len(qpp_id_order) - 1)
                 qpp_id_order.insert(i, q)
         q_return = []
         for q in qpp_id_order:
-            if q in self.qids:
-                q_return.append(q)
+            if q.encode() in self.qids:
+                q_return.append(q.encode())
         return q_return
 
 
@@ -101,7 +101,7 @@ class cross_posCOBERTSampler(Sampler):
         for qid in self.qpp_order:
             num_indices = []
             for num in range(1, self.rank_num):
-                qid = int(qid)
+                #qid = int(qid)
                 try:
                     qindex = torch.tensor(np.where((self.data.biass == num)&(self.data.query_ids == qid))[0])
                     assert len(qindex) == 1, len(qindex)
@@ -140,7 +140,7 @@ class cross_COBERTSampler(Sampler):
         self.rank_num = args.rank_num
         # self.total_top = total_top
         self.qpp_order = self.get_initial_qpp_list(qpp_file_path)
-        print(self.qpp_order)
+        #print(self.qpp_order)
         self.batchnum_wo_drop, self.batchnum_wi_drop, self.indices = self.get_indices()
         logger.info('cross_COBERTSampler start successfully!')
 
@@ -159,13 +159,13 @@ class cross_COBERTSampler(Sampler):
         for item in order:
             qpp_id_order.append(item[0])
         for q in self.qids:
-            if q not in qpp_id_order:
+            if q.decode('utf-8') not in qpp_id_order:
                 i = random.randint(0, len(qpp_id_order) - 1)
                 qpp_id_order.insert(i, q)
         q_return = []
         for q in qpp_id_order:
-            if q in self.qids:
-                q_return.append(q)
+            if q.encode() in self.qids:
+                q_return.append(q.encode())
         return q_return
 
 
@@ -178,7 +178,7 @@ class cross_COBERTSampler(Sampler):
         for num in range(1, self.rank_num):
             num_indices = []
             for qid in self.qpp_order:
-                qid = int(qid)
+                #qid = int(qid)
                 try:
                     qindex = torch.tensor(np.where((self.data.biass == num) & (self.data.query_ids == qid))[0])
                     assert len(qindex) == 1, len(qindex)
@@ -223,14 +223,18 @@ class cross_RandomSampler(Sampler):
         indices = []
         q_ids = np.unique(self.data.query_ids)
         for qid in q_ids:
-            if str(qid) not in self.qids:
+            if qid not in self.qids:
+                print("str >>>",np.str_(qid),qid)
+                print(self.qids)
+                print("bad query!")
                 continue
             for num in range(1, self.rank_num):
-                qid = int(qid)
+                qid = qid
                 try:
                     qindex = torch.tensor(np.where((self.data.biass == num) & (self.data.query_ids == qid))[0])
                     assert len(qindex) == 1
                 except:
+                    print("no index")
                     continue
 
                 indices.append(qindex)
@@ -277,7 +281,7 @@ class cross_negrand_COBERTSampler(Sampler):
         self.rank_num = args.rank_num
         # self.total_top = total_top
         self.qpp_order = self.get_initial_qpp_list(qpp_file_path)
-        print(self.qpp_order)
+        #print(self.qpp_order)
         self.batchnum_wo_drop, self.batchnum_wi_drop, self.indices = self.get_indices()
         logger.info('cross_COBERTSampler start successfully!')
 

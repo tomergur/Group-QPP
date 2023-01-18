@@ -47,6 +47,7 @@ class PregeneratedDataset(Dataset):
 
         if reduce_memory:
             p = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'cache')
+            print("cache dir",p)
             if data_seed==1:
                 #没有其他程序正在运行
                 del_file(p)
@@ -60,10 +61,13 @@ class PregeneratedDataset(Dataset):
                                   shape=(self.num_samples, ), mode='w+', dtype=np.float32)
             label_ids[:] = -1
 
-            query_ids = np.memmap(filename=os.path.join(p, 'query_ids_{}.memmap'.format(str(data_seed))),
-                              shape=(self.num_samples, ), mode='w+', dtype=np.int32)
-            query_ids[:] = -1
 
+            query_ids = np.memmap(filename=os.path.join(p, 'query_ids_{}.memmap'.format(str(data_seed))),
+                              shape=(self.num_samples, ), mode='w+', dtype='S256')
+            query_ids[:] = -1
+           
+
+            #query_ids = [None] * self.num_samples
             biass = np.memmap(filename=os.path.join(p, 'biass_{}.memmap'.format(str(data_seed))),
                                   shape=(self.num_samples,), mode='w+', dtype=np.int32)
             biass[:] = -1
@@ -83,7 +87,7 @@ class PregeneratedDataset(Dataset):
                 segment_ids[i] = [int(id) for id in tokens[5].split()]
 
 
-                query_ids[i] = int(tokens[0])
+                query_ids[i] = tokens[0]
                 doc_ids[i] = tokens[1]
                 biass[i] = int(tokens[2])
                 guid = "%s-%s" % (self.set_type, tokens[0]+'-'+tokens[1]+'-'+tokens[2])
@@ -158,7 +162,7 @@ class PregeneratedDataset(Dataset):
             return (torch.tensor(self.input_ids[item], dtype=torch.long),
                     torch.tensor(self.input_masks[item], dtype=torch.long),
                     torch.tensor(self.segment_ids[item], dtype=torch.long),
-                    self.query_ids[item],
+                    str(self.query_ids[item]),
                     self.doc_ids[item],
                     self.biass[item],
                     self.features[item],
@@ -167,7 +171,7 @@ class PregeneratedDataset(Dataset):
             return (torch.tensor(self.input_ids[item], dtype=torch.long),
                     torch.tensor(self.input_masks[item], dtype=torch.long),
                     torch.tensor(self.segment_ids[item], dtype=torch.long),
-                    self.query_ids[item],
+                    str(self.query_ids[item]),
                     self.doc_ids[item],
                     self.biass[item],
                     label_id)
@@ -178,6 +182,7 @@ output_modes = {
     "robust": "regression",
     "gov": "regression",
     "clue": "regression",
+    "or_quac":"regression",
 }
 
 def get_labels(task_name):
@@ -189,6 +194,8 @@ def get_labels(task_name):
     elif task_name.lower() == "gov":
         return ["0", "1"]
     elif task_name.lower() == "clue":
+        return ["0", "1"]
+    elif task_name.lower() == "or_quac":
         return ["0", "1"]
     else:
         raise NotImplementedError
@@ -273,7 +280,6 @@ def get_metric_per_query(args):
         ql = args.ql_ranking_file
 
         metric_dict, _ = evaluate_trec_per_query(qrel, ql, args.metric, args.trec_eval_path)
-        print(metric_dict)
         return metric_dict
 
 def get_rank_task_dataloader(qpp_file_paths, fold_num, task_name, set_name, args, samplers, batch_size=None, dataset2=False):
@@ -282,12 +288,14 @@ def get_rank_task_dataloader(qpp_file_paths, fold_num, task_name, set_name, args
             pass
         else:
             split_qids_to_fold(args.fold, 2, args.qid_file, args.qid_split_dir, args.ref_file)
+
     if dataset2==False:
         data_name = args.data_name
     else:
         data_name = args.data_name
     output_mode = output_modes[task_name]
-    file_dir = os.path.join(args.data_dir, 'tokens/', data_name)
+    #, 'tokens/'
+    file_dir = os.path.join(args.data_dir, data_name)
     if args.label_type == 'all':
         metric_dict = get_metric_per_query(args)
     elif args.label_type == 'ndcg':
@@ -314,9 +322,12 @@ def get_rank_task_dataloader(qpp_file_paths, fold_num, task_name, set_name, args
     num_exampless = []
     dataloaders = []
     batch_nums = []
+    #all_qids=set(dataset.query_ids)
+    all_qids = np.unique(dataset.query_ids)
     for qpp_file_path, sampler in zip(qpp_file_paths, samplers):
+        print("smaplers:",list(zip(qpp_file_paths, samplers)))
         if sampler == 'cross_cobert':
-            qids = get_fold_qids(fold_num, args.qid_split_dir, set_name.lower())
+            qids = get_fold_qids(fold_num, args.qid_split_dir, set_name.lower()) if args.fold > 1 else all_qids
             s = cross_COBERTSampler(dataset, batch_size, args, qids, qpp_file_path=qpp_file_path)
             bs = COBERTBatchSampler(s, batch_size)
             dataloader = DataLoader(dataset, batch_sampler=bs)
@@ -327,7 +338,7 @@ def get_rank_task_dataloader(qpp_file_paths, fold_num, task_name, set_name, args
             batch_nums.append(batch_num)
             logger.info('initialize cross_cobert sampler successfully!')
         elif sampler == 'pos_cross_cobert':
-            qids = get_fold_qids(fold_num, args.qid_split_dir, set_name.lower())
+            qids = get_fold_qids(fold_num, args.qid_split_dir, set_name.lower()) if args.fold > 1 else all_qids
             s = cross_posCOBERTSampler(dataset, batch_size, args, qids, qpp_file_path=qpp_file_path)
             bs = posCOBERTBatchSampler(s, batch_size)
             dataloader = DataLoader(dataset, batch_sampler=bs)
@@ -338,7 +349,7 @@ def get_rank_task_dataloader(qpp_file_paths, fold_num, task_name, set_name, args
             batch_nums.append(batch_num)
             logger.info('initialize pos_cross_cobert sampler successfully!')
         elif sampler=='cross_random':
-            qids = get_fold_qids(fold_num, args.qid_split_dir, set_name.lower())
+            qids = get_fold_qids(fold_num, args.qid_split_dir, set_name.lower()) if args.fold > 1 else all_qids
             s = cross_RandomSampler(dataset, qids, args)
             num_examples = len(s)
             dataloader = DataLoader(dataset, sampler=s, batch_size=batch_size)

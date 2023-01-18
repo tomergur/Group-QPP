@@ -25,7 +25,7 @@ from transformers import BertForTokenClassification, BertForSequenceClassificati
 from itertools import cycle
 # from transformer.modeling2 import BertForSequenceClassification, BertEmbeddings
 # # from transformer.tokenization import BertTokenizer
-from transformer.optimization import BertAdam
+# from transformer.optimization import BertAdam
 # from transformer.file_utils import WEIGHTS_NAME, CONFIG_NAME
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 from utils.dataloader import get_labels, output_modes, get_rank_task_dataloader
@@ -54,9 +54,10 @@ def get_order_dict(topfile):
 
 def get_score_dict(ql_file):
     ql_score_dict = {}
+    print("get score dict",ql_file)
     with open(ql_file, 'r', encoding='utf-8') as qlf:
         for line in qlf:
-            qid, _, did, _, score, _ = line.split(' ')
+            qid, _, did, _, score, _ = line.split('\t')
             ql_score_dict.setdefault(qid, {})
             ql_score_dict[qid][did] = float(score)
     return ql_score_dict
@@ -256,6 +257,7 @@ def main():
     parser.add_argument('--save_step',
                         type=int,
                         default=50000)
+    parser.add_argument("--qpp_file_path",default=None)
     parser.add_argument('--fp16', action='store_true',
                         help="Whether to use 16-bit (mixed) precision (through NVIDIA apex) instead of 32-bit")
     parser.add_argument('--fp16_opt_level', type=str, default='O1',
@@ -286,7 +288,8 @@ def main():
     #     os.makedirs(args.output_dir)
 
     # Prepare  Data
-    task_name = args.task_name.lower()
+    v = args.task_name.lower()
+    task_name=args.task_name
     output_mode = output_modes[task_name]
     label_list = get_labels(task_name.lower())
     num_labels = args.label_num
@@ -323,7 +326,7 @@ def main():
             last_qpp = ''
             last_dict = {}
             for sn in args.qpp_methods:
-                qpp_file_path = os.path.join(args.output_dir, str(fold), 'train', 'bsln', sn, 'best')
+                qpp_file_path = os.path.join(args.output_dir, str(fold), 'train', 'bsln', sn, 'best') if args.qpp_file_path is None else args.qpp_file_path
                 if args.model_name == 'cobert':
                     qpp_file_paths.append(qpp_file_path)
                     order_dict = get_order_dict(qpp_file_path)
@@ -429,7 +432,7 @@ def main():
                 # nb_tr_examples, nb_tr_steps = 0, 0
                 if len(train_dataloaders)==1:
                     train_dataloader = train_dataloaders[0]
-                    for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration", ascii=True)):
+                    for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration", ascii=False)):
                         batch = tuple(t for t in batch)
                         if len(batch) == 8:
                             input_ids, input_mask, segment_ids, query_ids, doc_ids, biass, features, label_ids = batch
@@ -440,7 +443,8 @@ def main():
                         input_mask = input_mask.to(device)
                         segment_ids = segment_ids.to(device)
                         label_ids = label_ids.to(device)
-                        query_ids = query_ids.cpu().numpy()
+                        #print("query_ids",type(query_ids),query_ids)
+                        #query_ids = query_ids.cpu().numpy()
                         biass = biass.to(device)
                         # doc_ids = doc_ids.cpu()
 
@@ -450,8 +454,8 @@ def main():
                             order_dict = order_dicts[0]
                             for idx in range(len(query_ids)):
                                 qid = str(query_ids[idx])
-                                if qid in order_dict:
-                                    index = order_dict[qid]
+                                if qid[2:-1] in order_dict:
+                                    index = order_dict[qid[2:-1]]
                                 else:
                                     if args.random:
                                         index = random.randint(0,len(query_ids)-1)
@@ -465,6 +469,11 @@ def main():
 
                         if args.model_name == 'poscobert':
                             indexs = biass.long()
+
+
+
+                        #my method to deal with indexes problem...
+                        indexs=None
 
 
                         try:
@@ -559,8 +568,9 @@ def main():
                     assert args.num_train_epochs!=5
                         # , cycle(train_dataloaders[2]),
                         #        cycle(train_dataloaders[3]), cycle(train_dataloaders[4]))
-                    for steps, batchs in tqdm(enumerate(zips), desc="Iteration", ascii=True):
+                    for steps, batchs in tqdm(enumerate(zips), desc="Iteration", ascii=True,total=batch_nums[0]):
                         for i, batch in enumerate(batchs):
+                            #print("bach type:",i)
                             batch = tuple(t for t in batch)
                             if len(batch) == 8:
                                 input_ids, input_mask, segment_ids, query_ids, doc_ids, biass, features, label_ids = batch
@@ -571,16 +581,18 @@ def main():
                             input_mask = input_mask.to(device)
                             segment_ids = segment_ids.to(device)
                             label_ids = label_ids.to(device)
-                            query_ids = query_ids.cpu().numpy()
+                            #query_ids = query_ids.cpu().numpy()
                             biass = biass.to(device)
                             # doc_ids = doc_ids.cpu()
                             order_dict = order_dicts[i]
                             indexs = []
+                            #print(order_dict)
                             for idx in range(len(query_ids)):
-                                qid = str(query_ids[idx])
+                                qid = str(query_ids[idx])[2:-1]
                                 if qid in order_dict:
                                     index = order_dict[qid]
                                 else:
+                                    print("not found index")
                                     index = random.randint(0, len(order_dict) - 1)
                                 indexs.append(index)
                                 # did = doc_ids[idx]
@@ -590,12 +602,17 @@ def main():
 
                             ql_scores = []
                             for idx in range(len(query_ids)):
-                                qid = str(query_ids[idx])
+                                qid = query_ids[idx]
                                 did = str(doc_ids[idx])
-                                ql_scores.append(score_dict[qid][did])
+                                #print("qid bug:",qid,"v2",qid[2:-1] )
+                                ql_scores.append(score_dict[qid[2:-1]][did])
                             ql_scores = torch.tensor(ql_scores).unsqueeze(1).to(device)
                             if i == 2:
                                 indexs = biass.long()
+
+                            if i<2:
+                                indexs = None
+
 
 
                             if step < 6:
@@ -619,6 +636,7 @@ def main():
                                 # logger.info(label_ids)
                                 # logger.info(student_logits.view(-1))
                                 loss_mse = MSELoss()
+                                #print(student_logits.view(-1),label_ids.view(-1))
                                 loss = loss_mse(student_logits.view(-1), label_ids.view(-1))
                                 # cont = 0
                                 # for i in range(len(student_logits.view(-1)) - 1):

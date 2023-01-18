@@ -20,7 +20,7 @@ class COBERT(torch.nn.Module):
     def __init__(self, pre_path_QT, pre_path_QB, pre_path_attn, num_labels, fold=None):
         super(COBERT, self).__init__()
 
-        if fold is not None:
+        if fold is not None and os.path.isdir(pre_path_QT.format(str(fold))):
             dir_list = [item for item in os.listdir(pre_path_QT.format(str(fold))) if item.startswith('checkpoint')]
             if len(dir_list)!=0:
                 pre_path_QT = os.path.join(pre_path_QT.format(str(fold)), dir_list[0])

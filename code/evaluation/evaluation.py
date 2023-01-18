@@ -139,14 +139,18 @@ def evaluate_trec_per_query(qrels, res, tp, trec_eval_script_path):
       tp = 'ndcg_cut_20'
   elif tp == 'ap':
       tp = 'map'
+  print(qrels)
+  print(res)
   command = [trec_eval_script_path, '-q', '-m', tp, qrels, res]
   output = run(command, get_ouput=True)
   output = str(output, encoding='utf-8')
-  ndcg_lines = re.findall(tp+r'\s+\t\d+.+\d+', output)
+  #print("output",output)
+  #ndcg_lines = re.findall(tp+r'\s+\t\s+\t.+\d+', output)
+  ndcg_lines=output.splitlines()
   # print(re.findall(r'ndcg_cut_20\s+\tall+.+\d+', output)[0].split('\t')[2])
   ndcg10 = float(re.findall(tp+r'\s+\tall+.+\d+', output)[0].split('\t')[2])
-  # print(ndcg10)
-  # print(ndcg_lines)
+  #print(ndcg10)
+  #print("ndcg liness flag",ndcg_lines)
   NDCG10_all = 0.
   NDCG10 = {}
   for line in ndcg_lines:
@@ -154,6 +158,9 @@ def evaluate_trec_per_query(qrels, res, tp, trec_eval_script_path):
     # print(tokens)
     assert tokens[0].strip() == tp
     qid, ndcg = tokens[1].strip(), float(tokens[2].strip())
+    if qid=="all":
+      print("alll")
+      continue
     NDCG10[qid] = ndcg
     NDCG10_all += ndcg
 
