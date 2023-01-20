@@ -46,10 +46,13 @@ class PregeneratedDataset(Dataset):
         self.features_file = features_file
 
         if reduce_memory:
-            #p = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'cache')
-            p = os.path.join(training_path, 'cache')
-            if not os.path.exists(p):
-                os.mkdir(p)
+            i=1
+            p = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'cache_{}'.format(i))
+            while os.path.exists(p):
+                i+=1
+                p = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'cache_{}'.format(i))
+            os.mkdir(p)
+
 
             print("cache dir",p)
             if data_seed==1:
