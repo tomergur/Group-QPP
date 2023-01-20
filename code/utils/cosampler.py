@@ -4,6 +4,7 @@ import torch
 from torch.utils.data.sampler import Sampler
 import logging
 import sys
+import time
 log_format = '%(asctime)s %(message)s'
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format=log_format, datefmt='%m/%d %I:%M:%S %p')
@@ -26,6 +27,7 @@ class COBERTSampler(Sampler):
         return iter(indices)
 
     def get_indices(self):
+        start_time=time.time()
         topnum = self.args.top_num
         overlap = self.args.overlap
         indices = []
@@ -49,6 +51,7 @@ class COBERTSampler(Sampler):
         batchnum_wi_drop = len([i for i in indices if len(i) == self.batchsize])
         indices = torch.cat(indices, dim=0)
         indices = indices
+        print("COBERTSampler inices time",time.time()-start_time)
         return batchnum_wo_drop, batchnum_wi_drop, indices
 
     def __len__(self):
@@ -93,17 +96,19 @@ class cross_posCOBERTSampler(Sampler):
 
 
     def get_indices(self):
+        start_time=time.time()
         topnum = self.args.top_num
         overlap = self.args.overlap
         olen = self.batchsize - topnum
         # q_ids = np.unique(self.data.query_ids)
         indices = []
         for qid in self.qpp_order:
+            qid_inds=self.data.query_ids == qid
             num_indices = []
             for num in range(1, self.rank_num):
                 #qid = int(qid)
                 try:
-                    qindex = torch.tensor(np.where((self.data.biass == num)&(self.data.query_ids == qid))[0])
+                    qindex = torch.tensor(np.where((self.data.biass == num)&(qid_inds))[0])
                     assert len(qindex) == 1, len(qindex)
                 except:
                     continue
@@ -125,6 +130,7 @@ class cross_posCOBERTSampler(Sampler):
         batchnum_wi_drop = len([i for i in indices if len(i) == self.batchsize])
         indices = torch.cat(indices, dim=0)
         indices = indices
+        print("cross_COBERTSampler inices time", time.time() - start_time)
         return batchnum_wo_drop, batchnum_wi_drop, indices
 
     def __len__(self):
@@ -133,15 +139,18 @@ class cross_posCOBERTSampler(Sampler):
 
 class cross_COBERTSampler(Sampler):
     def __init__(self, data, batchsize, args, qids, qpp_file_path, total_top=0):
+        start_time=time.time()
         self.data = data
         self.batchsize = batchsize
         self.args = args
         self.qids = qids
         self.rank_num = args.rank_num
         # self.total_top = total_top
+
         self.qpp_order = self.get_initial_qpp_list(qpp_file_path)
         #print(self.qpp_order)
         self.batchnum_wo_drop, self.batchnum_wi_drop, self.indices = self.get_indices()
+        print("total time:",time.time()-start_time)
         logger.info('cross_COBERTSampler start successfully!')
 
     def __iter__(self):
@@ -174,13 +183,16 @@ class cross_COBERTSampler(Sampler):
         # overlap = self.args.overlap
         # olen = self.batchsize - topnum
         # q_ids = np.unique(self.data.query_ids)
+        start_time=time.time()
         indices = []
+        query_inds_cache={qid:self.data.query_ids == qid for qid in self.qpp_order }
         for num in range(1, self.rank_num):
             num_indices = []
+            num_ind=self.data.biass == num
             for qid in self.qpp_order:
                 #qid = int(qid)
                 try:
-                    qindex = torch.tensor(np.where((self.data.biass == num) & (self.data.query_ids == qid))[0])
+                    qindex = torch.tensor(np.where((num_ind) & (query_inds_cache[qid]))[0])
                     assert len(qindex) == 1, len(qindex)
                 except:
                     continue
@@ -200,6 +212,7 @@ class cross_COBERTSampler(Sampler):
         batchnum_wi_drop = len([i for i in indices if len(i) == self.batchsize])
         indices = torch.cat(indices, dim=0)
         indices = indices
+        print("cross_COBERTSampler inices time", time.time() - start_time)
         return batchnum_wo_drop, batchnum_wi_drop, indices
 
     def __len__(self):
@@ -221,8 +234,11 @@ class cross_RandomSampler(Sampler):
 
     def get_indices(self):
         indices = []
+        start_time=time.time()
         q_ids = np.unique(self.data.query_ids)
+        num_inds_cache={num:self.data.biass == num for num in range(1, self.rank_num)}
         for qid in q_ids:
+            qid_inds=self.data.query_ids == qid
             if qid not in self.qids:
                 print("str >>>",np.str_(qid),qid)
                 print(self.qids)
@@ -231,7 +247,7 @@ class cross_RandomSampler(Sampler):
             for num in range(1, self.rank_num):
                 qid = qid
                 try:
-                    qindex = torch.tensor(np.where((self.data.biass == num) & (self.data.query_ids == qid))[0])
+                    qindex = torch.tensor(np.where((num_inds_cache[num]) & (qid_inds))[0])
                     assert len(qindex) == 1
                 except:
                     print("no index")
@@ -240,6 +256,7 @@ class cross_RandomSampler(Sampler):
                 indices.append(qindex)
         indices = torch.cat(indices, dim=0)
         indices = torch.tensor([indices[i] for i in torch.randperm(len(indices))])
+        print("cross_RandomSampler inices time", time.time() - start_time)
         return indices
 
     def __len__(self):
