@@ -152,6 +152,7 @@ def save_results(res, output_dir, model_dir, model_name='cobert'):
     rank1_result_path = os.path.join(output_dir,
                                          'results_rank1_{}_{}.txt'.format(
                                              model_dir, datetime.date.today().strftime('%Y_%m_%d')))
+    rank1_result_path = os.path.join(output_dir, 'results_rank1.txt')
     with open(rank1_result_path, 'wt') as runfile:
         rank1_dict = {}
         for idx in range(len(scores)):
@@ -173,6 +174,8 @@ def save_results(res, output_dir, model_dir, model_name='cobert'):
     predictions_file_path = os.path.join(output_dir,
                                          'full_results_{}_{}.txt'.format(
                                           model_dir, datetime.date.today().strftime('%Y_%m_%d')))
+    max_result_path = os.path.join(output_dir, 'results_max.txt')
+    avg_result_path = os.path.join(output_dir, 'results_avg.txt')
     rerank_run = {}
     for idx in range(len(scores)):
         qid = query_psgs_ids[idx][0]
