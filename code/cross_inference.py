@@ -18,7 +18,7 @@ from evaluation.test_trec_eval import validate
 from model.cobert import COBERT
 from model.ql_cobert import QL_COBERT
 from model.bertbase import BERT
-from get_corr import get_corr
+#from get_corr import get_corr
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
                     level=logging.INFO)
@@ -45,7 +45,7 @@ def get_score_dict(ql_file):
     ql_score_dict = {}
     with open(ql_file, 'r', encoding='utf-8') as qlf:
         for line in qlf:
-            qid, _, did, _, score, _ = line.split(' ')
+            qid, _, did, _, score, _ = line.split('\t')
             ql_score_dict.setdefault(qid, {})
             ql_score_dict[qid][did] = float(score)
     return ql_score_dict
@@ -67,11 +67,12 @@ def do_eval(args, model, eval_dataloader, device, order_dict, score_dict):
             input_mask = input_mask.to(device)
             segment_ids = segment_ids.to(device)
             label_ids = label_ids.to(device)
-            query_ids = query_ids.cpu().numpy()
+            #query_ids = query_ids.cpu().numpy()
             for idx in range(len(query_ids)):
                 qid = str(query_ids[idx])
-                if qid in order_dict:
-                    index = order_dict[qid]
+                if qid[2:-1] in order_dict:
+                    #print("index found")
+                    index = order_dict[qid[2:-1]]
                 else:
                     index = random.randint(0, len(order_dict) - 1)
                 indexs.append(index)
@@ -84,7 +85,7 @@ def do_eval(args, model, eval_dataloader, device, order_dict, score_dict):
                 for idx in range(len(query_ids)):
                     qid = str(query_ids[idx])
                     did = str(doc_ids[idx])
-                    ql_scores.append(score_dict[qid][did])
+                    ql_scores.append(score_dict[qid[2:-1]][did])
             ql_scores = torch.tensor(ql_scores).unsqueeze(1).to(device)
             # print(len(input_ids))
             # macs, params = profile(model, inputs=(input_ids, segment_ids, input_mask, label_ids, indexs,  args, ql_scores))
@@ -387,6 +388,7 @@ def main():
                         type=int,
                         default=2,
                         help="label_num")
+    parser.add_argument("--qpp_file_path", default=None)
 
     # parser.add_argument("--num_eval_passages",
     #                     default=3000,
@@ -456,12 +458,15 @@ def main():
         else:
             raise NotImplementedError
 
+        print(model_dirs)
+
         for sub_model_dir in model_dirs:
             dir = sub_model_dir.split('/')[-1]
             if args.model_name == 'vanilla':
                 model = BERT(sub_model_dir, num_labels=num_labels)
             elif args.model_name == 'cobert' or args.model_name == 'poscobert':
                 model = COBERT(args.encoder_model, args.groupwise_model, args.attn_model, num_labels)
+                print("load model from",os.path.join(sub_model_dir, 'weights.pt'))
                 model.load_state_dict(torch.load(os.path.join(sub_model_dir, 'weights.pt')), strict=False)
             elif args.model_name == 'ql_cobert':
                 model = QL_COBERT(args.encoder_model, args.groupwise_model, args.attn_model, num_labels)
@@ -472,13 +477,13 @@ def main():
             model.to(device)
             if n_gpu > 1:
                 model = torch.nn.DataParallel(model)
-            qpp_file_path = os.path.join(args.output_dir, str(fold), '{}/'.format(tk_qpp), 'bsln', args.qpp_method)
+            qpp_file_path = os.path.join(args.output_dir, str(fold), '{}/'.format(tk_qpp), 'bsln', args.qpp_method) if args.qpp_file_path is None else args.qpp_file_path
             if args.do_dev:
                 qpp = [item for item in os.listdir(qpp_file_path) if item.startswith('best')]
             elif args.do_test:
-                qpp = [item for item in os.listdir(qpp_file_path) if not item.startswith('record')]
-            assert len(qpp)==1
-            qpp_file_path = os.path.join(qpp_file_path, qpp[0])
+                qpp = [item for item in os.listdir(qpp_file_path) if not item.startswith('record')] if args.qpp_file_path is None else args.qpp_file_path
+            #assert len(qpp)==1
+            #qpp_file_path = os.path.join(qpp_file_path, qpp[0])
             order_dict = get_order_dict(qpp_file_path)
             score_dict = get_score_dict(args.ql_ranking_file)
             if args.do_dev:
@@ -491,7 +496,7 @@ def main():
             pred_res = do_eval(args, model, dataloader[0], device, order_dict, score_dict)
             if args.do_dev or args.do_test:
                 save_results(pred_res, output_dir, dir, args.model_name)
-                get_metrics(output_dir, args)
+                #get_metrics(output_dir, args)
             else:
                 raise NotImplementedError
         output_dir = os.path.join(args.output_dir, '{}', '{}/'.format(tk), args.outdir_name)
@@ -500,6 +505,7 @@ def main():
 
 
 def get_final_result(fold, final_path, args):
+    return
     record_rank1_file = os.path.join(final_path,
                                      'record_rank1_{}_{}.txt'.format(args.outdir_name, datetime.date.today().strftime('%Y_%m_%d')))
     record_max_file = os.path.join(final_path,

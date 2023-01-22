@@ -561,6 +561,7 @@ def main():
                     num_loaders = len(train_dataloaders)
                     if len(train_dataloaders) == 3:
                         zips = zip(train_dataloaders[0], cycle(train_dataloaders[1]), cycle(train_dataloaders[2]))
+                        print("3 data loaders ")
                     elif len(train_dataloaders) == 2:
                         zips = zip(train_dataloaders[0], cycle(train_dataloaders[1]))
                     else:
