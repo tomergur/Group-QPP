@@ -80,6 +80,8 @@ def do_eval(args, model, eval_dataloader, device, order_dict, score_dict):
             if args.model_name == 'poscobert':
                 indexs = biass.long()
             indexs = torch.tensor(indexs, dtype=torch.long).to(device)
+            if args.model_name =='cobert':
+                indexs=None
             ql_scores = []
             if args.model_name == 'ql_cobert':
                 for idx in range(len(query_ids)):
