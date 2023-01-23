@@ -394,6 +394,7 @@ def main():
                         default=2,
                         help="label_num")
     parser.add_argument("--qpp_file_path", default=None)
+    parser.add_argument("--get_first_checkpoint",action='store_false',default=True)
 
     # parser.add_argument("--num_eval_passages",
     #                     default=3000,
@@ -434,7 +435,7 @@ def main():
             def num(ele):
                 return int(ele.split('-')[-1])
 
-            dir_list.sort(key=num, reverse=True)
+            dir_list.sort(key=num, reverse=args.get_first_checkpoint)
             # dir_list.sort(key=num)
             logger.info('*******')
             logger.info(dir_list)
