@@ -190,6 +190,7 @@ output_modes = {
     "gov": "regression",
     "clue": "regression",
     "or_quac":"regression",
+    "topiocqa": "regression",
 }
 
 def get_labels(task_name):
@@ -203,6 +204,8 @@ def get_labels(task_name):
     elif task_name.lower() == "clue":
         return ["0", "1"]
     elif task_name.lower() == "or_quac":
+        return ["0", "1"]
+    elif task_name.lower() == "topiocqa":
         return ["0", "1"]
     else:
         raise NotImplementedError
